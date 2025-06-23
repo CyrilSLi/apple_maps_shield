@@ -48,8 +48,9 @@ def styles ():
                 access_key = params ["accessKey"] [0]
     page = context.new_page ()
     page.on ("request", onrequest)
-    with page.expect_request (lambda req: "map-type-" in req.url) as _:
+    with page.expect_request (lambda req: "reportAnalytics" in req.url or "analyticsStatus" in req.url) as _:
         page.goto (request.args ["url"])
+    page.close ()
     return jsonify ({
         "shields": shields,
         "access_key": access_key,
