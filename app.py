@@ -4,14 +4,11 @@ from base64 import b64encode
 from urllib import parse
 
 # Third-party modules:
-from flask import Flask, redirect, request, jsonify, send_file
-from flask_cors import CORS
+from flask import Flask, request, jsonify, send_file
 from playwright.sync_api import sync_playwright
 from werkzeug.serving import make_server
 
 app = Flask (__name__)
-CORS (app)
-
 context, playwright = None, None
 playwright = sync_playwright ().start ()
 def get_context ():
