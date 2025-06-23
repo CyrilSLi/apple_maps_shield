@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Apple Maps highway shield generator</title>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/brython@3/brython.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/brython@3/brython_stdlib.min.js"></script>
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            line-height: normal;
+            font-weight: normal;
+            text-decoration: none;
+            border: none;
+        }
+        p, h1, h2, h3, h4, h5, h6, input, button {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        p, input, button {
+            font-size: 20px;
+        }
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        a, a:visited {
+            color: blue;
+            text-decoration: underline;
+        }
+        input[type="text"], button {
+            color: black;
+            padding: 5px 7px;
+            margin: 0px 20px;
+            border-radius: 0px;
+            background-color: #f8f8f8;
+            border: 1px solid gray;
+        }
+        #url[url-valid="true"] {
+            background-color: #bfffbf;
+        }
+        ::placeholder {
+            color: gray;
+            opacity: 1;
+        }
+        ::-ms-input-placeholder {
+            color: gray;
+        }
+        .row, label {
+            margin: 0px 10px;
+        }
+        div.row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+        input.row {
+            flex: 1;
+        }
+        input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        input[type="radio"] + img {
+            border-radius: 15px;
+            padding: 10px;
+            height: 200px;
+            border: 5px solid #bfbfbf;
+        }
+        input[type="radio"]:checked + img {
+            border-color: black;
+        }
+    </style>
+</head>
+<body onload="brython(0)">
+    <noscript>
+        <p>JavaScript is required to use this website.</p>
+    </noscript>
+    <h1>Apple Maps highway shield generator</h1>
+    <p>1. Visit <a href="https://maps.apple.com/" target="_blank">Apple Maps</a> and navigate to an area with your desired highway shield visible.</p>
+    <p>2. Paste the full URL below (the box will turn green if the URL is valid).</p>
+    <div class="row">
+        <button class="row" id="search">Search</button>
+        <input class="row" id="url" type="text" placeholder="https://maps.apple.com/frame?center=" />
+        <p id="status" style="margin: 0px 10px;">Invalid</p>
+    </div>
+    <p>3. Click "Search" and select the style of shield you want below.</p>
+    <div class="row" id="styles" style="height: 230px"></div>
+    <p>4. Enter your desired text below and click "Generate".</p>
+    <div class="row">
+        <button class="row" id="generate">Generate</button>
+        <input class="row" id="text" type="text" placeholder="Shield text" />
+    </div>
+    <p>5. The image will appear below (if not, click "Search" again to refresh the API key).</p>
+    <script type="text/python">
+        from browser import ajax, document, html, window
+        import re
+        access_key, selected = None, None
+        def validate (ev):
+            regex = r"(https:\/\/)?maps\.apple\.com\/frame\?center=-?[0-9]+\.[0-9]+(%2C|,)-?[0-9]+\.[0-9]+&span=-?[0-9]+\.[0-9]+(%2C|,)-?[0-9]+\.[0-9]+"
+            if re.fullmatch (regex, document ["url"].value):
+                document ["url"].attrs ["url-valid"] = "true"
+                document ["status"].textContent = "Valid"
+            else:
+                if "url-valid" in document ["url"].attrs:
+                    del document ["url"].attrs ["url-valid"]
+                document ["status"].textContent = "Invalid"
+        document ["url"].bind ("input", validate)
+
+        def search (ev):
+            if "url-valid" not in document ["url"].attrs:
+                return
+            del document ["url"].attrs ["url-valid"]
+            document ["url"].attrs ["disabled"] = "disabled"
+            document ["status"].textContent = "Searching..."
+            def set_selected (ev):
+                ev.stopPropagation ()
+                global selected
+                if ev.target.checked:
+                    selected = ev.target.value
+                    print (f"Selected style: {selected}")
+            def complete (res):
+                global selected
+                validate (None)
+                del document ["url"].attrs ["disabled"]
+                global access_key, selected
+                access_key = res.json ["access_key"]
+                document ["styles"].clear ()
+                styles = set ()
+                for i in res.json ["shields"]:
+                    style_id = f"{i ['id']} {i ['variant']}"
+                    if style_id in styles:
+                        continue
+                    styles.add (style_id)
+                    radio = html.INPUT (type = "radio", name = "style", value = style_id, checked = style_id == selected)
+                    radio.bind ("change", set_selected)
+                    document ["styles"] <= html.LABEL ((radio, html.IMG (src = i ["image"])))
+            ajax.get ("/styles?url=" + window.encodeURIComponent(document["url"].value), oncomplete = complete, cache = True)
+        document ["search"].bind ("click", search)
+
+        def url_enter (ev):
+            if ev.key == "Enter":
+                ev.preventDefault()
+                search (ev)
+        document ["url"].bind ("keyup", url_enter)
+    </script>
+</body>
+</html>
