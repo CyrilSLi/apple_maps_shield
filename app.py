@@ -1,5 +1,5 @@
 # Built-in modules:
-import io, logging, re
+import io, logging, re, sys
 from base64 import b64encode
 from urllib import parse
 
@@ -72,7 +72,7 @@ def index ():
     return send_file ("index.html")
 
 if __name__ == "__main__":
-    server = make_server ("0.0.0.0", 5033, app)
+    server = make_server ("0.0.0.0", sys.argv [1] if len (sys.argv) > 1 else 5033, app)
     logging.getLogger ("werkzeug").setLevel (logging.ERROR)
     try:
         server.serve_forever ()

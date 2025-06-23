@@ -11,7 +11,7 @@ pip install -r requirements.txt && playwright install chromium-headless-shell
 ## Usage
 
 ```
-python app.py
+python app.py [PORT]
 ```
 
-The web app is available at the computer's local IP address (and [localhost](http://localhost:5033)), port 5033.
+The web app is available at the computer's local IP address (and [localhost](http://localhost:5033)), port 5033 or specified in the argument.
