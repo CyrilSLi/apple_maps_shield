@@ -25,22 +25,25 @@ def styles ():
     global context
     if not re.fullmatch (r"(https:\/\/)?maps\.apple\.com\/frame\?center=-?[0-9]+\.[0-9]+(%2C|,)-?[0-9]+\.[0-9]+&span=-?[0-9]+\.[0-9]+(%2C|,)-?[0-9]+\.[0-9]+", request.args.get ("url", "")):
         return jsonify ({})
-    shields, access_key = [], None
+    shields, access_key, styles = [], None, set ()
     get_context ()
     def onrequest (req):
         global context
-        nonlocal shields, access_key
+        nonlocal access_key, shields, styles
         if "v1/shield" in req.url:
             parsed = parse.urlparse (req.url)
             params = parse.parse_qs (parsed.query)
             if all (k in params for k in ("id", "variant", "scale", "sizeGroup")):
+                style_id = f"{params ['id'] [0]} {params ['variant'] [0]}"
+                if style_id in styles:
+                    return
+                styles.add (style_id)
                 params ["scale"] = [3]     # Max scale
                 params ["sizeGroup"] = [7] # Max size group
                 page = context.new_page ()
                 img = page.goto (parsed._replace (query = parse.urlencode (params, doseq = True)).geturl ())
                 shields.append ({
-                    "id": params ["id"] [0],
-                    "variant": params ["variant"] [0],
+                    "id": style_id,
                     "image": "data:image/png;base64," + b64encode (img.body ()).decode ("utf-8"),
                 })
                 page.close ()
@@ -60,9 +63,9 @@ def shield ():
     global context
     if not context: # Reuse existing context if available
         get_context ()
-    if not all (k in request.args for k in ("id", "text", "accessKey")):
+    if not all (k in request.args for k in ("id", "text", "access_key")):
         return jsonify ({})
-    id, text, variant, access_key = (parse.quote (request.args.get (k, "0"), safe = "") for k in ("id", "text", "variant", "accessKey"))
+    id, text, variant, access_key = (parse.quote (request.args.get (k, "0"), safe = "") for k in ("id", "text", "variant", "access_key"))
     page = context.new_page ()
     img = page.goto ("https://cdn.apple-mapkit.com/md/v1/shield?id={}&text={}&scale=3&variant={}&sizeGroup=7&accessKey={}".format (id, text, variant, access_key))
     return send_file (io.BytesIO (img.body ()), mimetype = "image/png")
@@ -72,7 +75,7 @@ def index ():
     return send_file ("index.html")
 
 if __name__ == "__main__":
-    server = make_server ("127.0.0.1", 5033, app)
+    server = make_server ("0.0.0.0", 5033, app)
     logging.getLogger ("werkzeug").setLevel (logging.ERROR)
     try:
         server.serve_forever ()

@@ -37,7 +37,6 @@
         input[type="text"], button {
             color: black;
             padding: 5px 7px;
-            margin: 0px 20px;
             border-radius: 0px;
             background-color: #f8f8f8;
             border: 1px solid gray;
@@ -52,7 +51,7 @@
         ::-ms-input-placeholder {
             color: gray;
         }
-        .row, label {
+        .row, label, #status {
             margin: 0px 10px;
         }
         div.row {
@@ -62,6 +61,7 @@
         }
         input.row {
             flex: 1;
+            min-width: 0;
         }
         input[type="radio"] {
             position: absolute;
@@ -72,11 +72,19 @@
         input[type="radio"] + img {
             border-radius: 15px;
             padding: 10px;
-            height: 200px;
+            height: 160px;
             border: 5px solid #bfbfbf;
         }
         input[type="radio"]:checked + img {
             border-color: black;
+        }
+        #shield {
+            margin: 20px;
+            height: 240px;
+        }
+        #styles {
+            overflow-x: scroll;
+            padding-bottom: 20px;
         }
     </style>
 </head>
@@ -86,20 +94,25 @@
     </noscript>
     <h1>Apple Maps highway shield generator</h1>
     <p>1. Visit <a href="https://maps.apple.com/" target="_blank">Apple Maps</a> and navigate to an area with your desired highway shield visible.</p>
-    <p>2. Paste the full URL below (the box will turn green if the URL is valid).</p>
+    <p>2. Paste the full URL below (the input box will turn green if the URL is valid).</p>
     <div class="row">
         <button class="row" id="search">Search</button>
         <input class="row" id="url" type="text" placeholder="https://maps.apple.com/frame?center=" />
-        <p id="status" style="margin: 0px 10px;">Invalid</p>
+        <p id="status">Invalid</p>
     </div>
     <p>3. Click "Search" and select the style of shield you want below.</p>
-    <div class="row" id="styles" style="height: 230px"></div>
-    <p>4. Enter your desired text below and click "Generate".</p>
+    <div class="row" id="styles">
+        <label>
+            <input type="radio" value="null" name="null" disabled />
+            <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+        </label>
+    </div>
+    <p>4. Enter text and click "Generate" (click "Search" to refresh the API key if shield does not display).</p>
     <div class="row">
         <button class="row" id="generate">Generate</button>
         <input class="row" id="text" type="text" placeholder="Shield text" />
     </div>
-    <p>5. The image will appear below (if not, click "Search" again to refresh the API key).</p>
+    <img id="shield" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
     <script type="text/python">
         from browser import ajax, document, html, window
         import re
@@ -126,7 +139,6 @@
                 global selected
                 if ev.target.checked:
                     selected = ev.target.value
-                    print (f"Selected style: {selected}")
             def complete (res):
                 global selected
                 validate (None)
@@ -134,23 +146,24 @@
                 global access_key, selected
                 access_key = res.json ["access_key"]
                 document ["styles"].clear ()
-                styles = set ()
                 for i in res.json ["shields"]:
-                    style_id = f"{i ['id']} {i ['variant']}"
-                    if style_id in styles:
-                        continue
-                    styles.add (style_id)
-                    radio = html.INPUT (type = "radio", name = "style", value = style_id, checked = style_id == selected)
+                    radio = html.INPUT (type = "radio", name = "style", value = i ["id"], checked = i ["id"] == selected)
                     radio.bind ("change", set_selected)
                     document ["styles"] <= html.LABEL ((radio, html.IMG (src = i ["image"])))
             ajax.get ("/styles?url=" + window.encodeURIComponent(document["url"].value), oncomplete = complete, cache = True)
         document ["search"].bind ("click", search)
 
-        def url_enter (ev):
-            if ev.key == "Enter":
-                ev.preventDefault()
-                search (ev)
-        document ["url"].bind ("keyup", url_enter)
+        def generate (ev):
+            global access_key, selected
+            if (not access_key) or (not selected):
+                return
+            document ["shield"].attrs ["src"] = "/shield?text={}&id={}&variant={}&access_key={}".format (*(
+                window.encodeURIComponent (i) for i in (document ["text"].value, *selected.split (), access_key)
+            ))
+        document ["generate"].bind ("click", generate)
+
+        document ["url"].bind ("keyup", lambda ev: (ev.preventDefault (), search(ev)) if ev.key == "Enter" else None)
+        document ["text"].bind ("keyup", lambda ev: (ev.preventDefault (), generate(ev)) if ev.key == "Enter" else None)
     </script>
 </body>
 </html>
