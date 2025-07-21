@@ -1,16 +1,26 @@
 # apple_maps_shield
 
-A web server & app that generates highway shields used in Apple Maps with arbitrary text.
+A userscript or web server & app that generates highway shields used in Apple Maps with arbitrary text.
 
-## Installation
+Use this project in one of two ways below:
+
+## Userscript
+
+Install the userscript [here](https://greasyfork.org/en/scripts/543159-apple-maps-custom-shields).
+
+## Web server & app
+
+### Installation & Usage
 
 ```
-pip install -r requirements.txt && playwright install chromium-headless-shell
+pip install dist/apple_maps_shield-1.0.0-py3-none-any.whl
+apple-maps-shield [PORT]
 ```
 
-## Usage
+or
 
 ```
+pip install -r requirements.txt
 python app.py [PORT]
 ```
 

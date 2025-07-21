@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+version = "1.0.0"
+name = "apple-maps-shield"
+description = "A web server & app that generates highway shields used in Apple Maps with arbitrary text"
+dynamic = ["dependencies"]
+authors = [
+    {name = "Cyril Li"}
+]
+readme = "README.md"
+license = "GPL-3.0-or-later"
+
+[project.urls]
+Homepage = "https://github.com/CyrilSLi/apple_maps_shield"
+Repository = "https://github.com/CyrilSLi/apple_maps_shield.git"
+
+[project.scripts]
+apple-maps-shield = "app:main"
+
+[tool.setuptools.dynamic]
+dependencies = {file = "requirements.txt"}
